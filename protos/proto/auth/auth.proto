@@ -7,6 +7,7 @@ option go_package = "vaber.auth.v1;authv1";
 service Auth {
   rpc Register (RegisterRequest) returns (RegisterResponse);
   rpc Login (LoginRequest) returns (LoginResponse);
+  rpc VerifyAccessToken(VerifyAccessTokenRequest) returns (VerifyAccessTokenResponse);
 }
 
 message RegisterRequest {
@@ -26,4 +27,13 @@ message LoginRequest {
 
 message LoginResponse {
   string token = 1;
+}
+
+message VerifyAccessTokenRequest {
+  string token = 1;
+}
+
+message VerifyAccessTokenResponse {
+  bool is_valid = 1;
+  string message = 2;
 }

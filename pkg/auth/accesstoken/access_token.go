@@ -5,6 +5,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/vaberof/auth-grpc/pkg/auth"
 	"github.com/vaberof/auth-grpc/pkg/domain"
+	"strconv"
 	"time"
 )
 
@@ -16,18 +17,32 @@ var (
 
 type SecretKey string
 
+// Create returns JWT token signed with specified secret key and stores specified user id and expiration time in payload
 func Create(userId domain.UserId, ttl time.Duration, secretKey SecretKey) (string, error) {
 	payload := auth.NewPayload(userId, ttl)
 
 	jwtWithClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    payload.UserId.String(),
-		IssuedAt:  jwt.NewNumericDate(payload.IssuedAt),
 		ExpiresAt: jwt.NewNumericDate(payload.ExpiredAt),
 	})
 
 	token, err := jwtWithClaims.SignedString([]byte(secretKey))
 
 	return token, err
+}
+
+// CreateWithExpirationTime is the same as Create, but additionally return token expiration
+func CreateWithExpirationTime(userId domain.UserId, ttl time.Duration, secretKey SecretKey) (string, time.Time, error) {
+	payload := auth.NewPayload(userId, ttl)
+
+	jwtWithClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+		Issuer:    payload.UserId.String(),
+		ExpiresAt: jwt.NewNumericDate(payload.ExpiredAt),
+	})
+
+	token, err := jwtWithClaims.SignedString([]byte(secretKey))
+
+	return token, payload.ExpiredAt, err
 }
 
 func Verify(token string, secretKey SecretKey) (*auth.JwtPayload, error) {
@@ -53,9 +68,13 @@ func Verify(token string, secretKey SecretKey) (*auth.JwtPayload, error) {
 		return nil, ErrExpiredToken
 	}
 
+	uid, err := strconv.Atoi(claims.Issuer)
+	if err != nil {
+		return nil, err
+	}
+
 	payload := &auth.JwtPayload{
-		UserId:    domain.UserId(claims.Issuer),
-		IssuedAt:  claims.IssuedAt.Time,
+		UserId:    domain.UserId(uid),
 		ExpiredAt: claims.ExpiresAt.Time,
 	}
 
