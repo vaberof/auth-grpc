@@ -1,0 +1,18 @@
+app:
+  grpc:
+    server:
+      host: localhost
+      port: 44044
+      timeout: 5s
+
+  access_token_ttl: 1h
+
+  postgres:
+    host: localhost
+    port: 5432
+    database: auth_grpc
+
+  redis:
+    host: localhost
+    port: 6379
+    database: 0
