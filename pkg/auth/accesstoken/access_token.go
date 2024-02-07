@@ -23,6 +23,7 @@ func Create(userId domain.UserId, ttl time.Duration, secretKey SecretKey) (strin
 
 	jwtWithClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    payload.UserId.String(),
+		IssuedAt:  jwt.NewNumericDate(payload.IssuedAt),
 		ExpiresAt: jwt.NewNumericDate(payload.ExpiredAt),
 	})
 
@@ -37,6 +38,7 @@ func CreateWithExpirationTime(userId domain.UserId, ttl time.Duration, secretKey
 
 	jwtWithClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    payload.UserId.String(),
+		IssuedAt:  jwt.NewNumericDate(payload.IssuedAt),
 		ExpiresAt: jwt.NewNumericDate(payload.ExpiredAt),
 	})
 
@@ -75,6 +77,7 @@ func Verify(token string, secretKey SecretKey) (*auth.JwtPayload, error) {
 
 	payload := &auth.JwtPayload{
 		UserId:    domain.UserId(uid),
+		IssuedAt:  claims.IssuedAt.Time,
 		ExpiredAt: claims.ExpiresAt.Time,
 	}
 

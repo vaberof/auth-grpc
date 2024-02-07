@@ -16,8 +16,9 @@ import (
 type AppServer struct {
 	Server  *grpc.Server
 	config  *ServerConfig
-	logger  *slog.Logger
 	address string
+
+	logger *slog.Logger
 }
 
 func New(config *ServerConfig, logs *logs.Logs) *AppServer {
@@ -87,7 +88,7 @@ func InterceptorLogger(l *slog.Logger) logging.Logger {
 func getLoggingOpts() []logging.Option {
 	loggingOpts := []logging.Option{
 		logging.WithLogOnEvents(
-			logging.StartCall, logging.FinishCall,
+			//logging.StartCall, logging.FinishCall,
 			logging.PayloadReceived, logging.PayloadSent,
 		),
 	}

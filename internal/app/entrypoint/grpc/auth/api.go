@@ -2,26 +2,26 @@ package auth
 
 import (
 	"context"
-	authv1 "github.com/vaberof/auth-grpc/protos/gen/go/auth"
+	pb "github.com/vaberof/auth-grpc/genproto/auth_service"
 	"google.golang.org/grpc"
 )
 
 type serverAPI struct {
-	authv1.UnimplementedAuthServer
+	pb.UnimplementedAuthServiceServer
 }
 
 func Register(gRPC *grpc.Server) {
-	authv1.RegisterAuthServer(gRPC, &serverAPI{})
+	pb.RegisterAuthServiceServer(gRPC, &serverAPI{})
 }
 
-func (s *serverAPI) Register(ctx context.Context, req *authv1.RegisterRequest) (*authv1.RegisterResponse, error) {
+func (s *serverAPI) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	panic("implement me")
 }
 
-func (s *serverAPI) Login(ctx context.Context, req *authv1.LoginRequest) (*authv1.LoginResponse, error) {
+func (s *serverAPI) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
 	panic("implement me")
 }
 
-func (s *serverAPI) VerifyAccessToken(ctx context.Context, req *authv1.VerifyAccessTokenRequest) (*authv1.VerifyAccessTokenResponse, error) {
+func (s *serverAPI) VerifyToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.VerifyTokenResponse, error) {
 	panic("implement me")
 }

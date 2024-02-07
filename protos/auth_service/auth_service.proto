@@ -1,13 +1,13 @@
 syntax = "proto3";
 
-package auth;
+package genproto;
 
-option go_package = "vaber.auth.v1;authv1";
+option go_package = "genproto/auth_service";
 
-service Auth {
+service AuthService {
   rpc Register (RegisterRequest) returns (RegisterResponse);
   rpc Login (LoginRequest) returns (LoginResponse);
-  rpc VerifyAccessToken(VerifyAccessTokenRequest) returns (VerifyAccessTokenResponse);
+  rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
 }
 
 message RegisterRequest {
@@ -29,11 +29,11 @@ message LoginResponse {
   string token = 1;
 }
 
-message VerifyAccessTokenRequest {
+message VerifyTokenRequest {
   string token = 1;
 }
 
-message VerifyAccessTokenResponse {
+message VerifyTokenResponse {
   bool is_valid = 1;
   string message = 2;
 }

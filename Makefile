@@ -6,6 +6,8 @@ CONFIG_DIR_LINUX=./cmd/authgrpc/config
 WORK_DIR_WINDOWS=.\cmd\authgrpc
 CONFIG_DIR_WINDOWS=.\cmd\authgrpc\config
 
+CURRENT_DIR=$(shell pwd)
+
 run.windows:
 	go run $(WORK_DIR_WINDOWS)\. \
 		-config.files $(CONFIG_DIR_WINDOWS)\application.yaml \
@@ -31,5 +33,5 @@ build.linux.clean:
 	rm -rf $(WORK_DIR_LINUX)/build
 
 proto.gen:
-	protoc -I protos/proto protos/proto/auth/auth.proto --go_out=./protos/gen/go --go_opt=paths=source_relative \
-		--go-grpc_out=./protos/gen/go/ --go-grpc_opt=paths=source_relative
+	rm -rf genproto
+	./scripts/gen_proto.sh ${CURRENT_DIR}
