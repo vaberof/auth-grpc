@@ -81,7 +81,7 @@ func (a *authServiceImpl) Register(ctx context.Context, email domain.Email, pass
 	}
 
 	if exists {
-		log.Warn("user already exists with specified email", email)
+		log.Warn("user already exists with specified email")
 
 		return ErrUserAlreadyExists
 	}
@@ -113,7 +113,7 @@ func (a *authServiceImpl) Register(ctx context.Context, email domain.Email, pass
 	}
 
 	go func() {
-		log.Info("send verification code to email", email)
+		log.Info("send verification code to email")
 
 		err := a.sendVerificationCode(ctx, registerCodeKey, email)
 		if err != nil {

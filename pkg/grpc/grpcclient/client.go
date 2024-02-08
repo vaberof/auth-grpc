@@ -22,9 +22,10 @@ func New(cfg *NotificationServiceClientConfig) (GrpcClient, error) {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("user service dial host=%s port=%d err: %v",
+		return nil, fmt.Errorf("user service dial host=%s port=%d err=%v",
 			cfg.Host, cfg.Port, err)
 	}
+
 	return &grpcClientImpl{
 		cfg: cfg,
 		connections: map[string]interface{}{
