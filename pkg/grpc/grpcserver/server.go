@@ -69,7 +69,7 @@ func (server *AppServer) StartAsync() <-chan error {
 	return exitChannel
 }
 
-func (server *AppServer) GracefulShutdown() {
+func (server *AppServer) Shutdown() {
 	server.logger.Info("Stopping gRPC server")
 
 	server.Server.GracefulStop()

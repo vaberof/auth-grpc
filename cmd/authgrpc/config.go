@@ -2,19 +2,24 @@ package main
 
 import (
 	"errors"
+	"github.com/vaberof/auth-grpc/internal/domain/auth"
 	"github.com/vaberof/auth-grpc/pkg/config"
 	"github.com/vaberof/auth-grpc/pkg/database/postgres"
 	"github.com/vaberof/auth-grpc/pkg/database/redis"
+	"github.com/vaberof/auth-grpc/pkg/grpc/grpcclient"
 	"github.com/vaberof/auth-grpc/pkg/grpc/grpcserver"
 )
 
 type AppConfig struct {
-	Server   grpcserver.ServerConfig
-	Postgres postgres.Config
-	Redis    redis.Config
+	Server      grpcserver.ServerConfig
+	AuthService auth.Config
+	Postgres    postgres.Config
+	Redis       redis.Config
+
+	NotificationService grpcclient.NotificationServiceClientConfig
 }
 
-func getAppConfig(sources ...string) AppConfig {
+func mustGetAppConfig(sources ...string) AppConfig {
 	config, err := tryGetAppConfig(sources...)
 	if err != nil {
 		panic(err)
@@ -40,6 +45,12 @@ func tryGetAppConfig(sources ...string) (*AppConfig, error) {
 		return nil, err
 	}
 
+	var authConfig auth.Config
+	err = config.ParseConfig(provider, "app.auth-service", &authConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	var postgresConfig postgres.Config
 	err = config.ParseConfig(provider, "app.postgres", &postgresConfig)
 	if err != nil {
@@ -52,11 +63,19 @@ func tryGetAppConfig(sources ...string) (*AppConfig, error) {
 		return nil, err
 	}
 
-	config := AppConfig{
-		Server:   serverConfig,
-		Postgres: postgresConfig,
-		Redis:    redisConfig,
+	var notificationServiceConfig grpcclient.NotificationServiceClientConfig
+	err = config.ParseConfig(provider, "app.grpc.client.notification-service", &notificationServiceConfig)
+	if err != nil {
+		return nil, err
 	}
 
-	return &config, nil
+	appConfig := AppConfig{
+		Server:              serverConfig,
+		AuthService:         authConfig,
+		Postgres:            postgresConfig,
+		Redis:               redisConfig,
+		NotificationService: notificationServiceConfig,
+	}
+
+	return &appConfig, nil
 }

@@ -8,15 +8,10 @@ CONFIG_DIR_WINDOWS=.\cmd\authgrpc\config
 
 CURRENT_DIR=$(shell pwd)
 
-run.windows:
-	go run $(WORK_DIR_WINDOWS)\. \
-		-config.files $(CONFIG_DIR_WINDOWS)\application.yaml \
-		-env.vars.file $(CONFIG_DIR_WINDOWS)\sample.env
-
 run.linux: build.linux
 	go run $(WORK_DIR_LINUX)/*.go \
 		-config.files $(CONFIG_DIR_LINUX)/application.yaml \
-		-env.vars.file $(CONFIG_DIR_LINUX)/application.env \
+		-env.vars.file $(CONFIG_DIR_LINUX)/sample.env \
 
 build.linux: build.linux.clean
 	mkdir -p $(WORK_DIR_LINUX)/build
@@ -31,6 +26,11 @@ build.linux.local: build.linux.clean
 
 build.linux.clean:
 	rm -rf $(WORK_DIR_LINUX)/build
+
+run.windows:
+	go run $(WORK_DIR_WINDOWS)\. \
+		-config.files $(CONFIG_DIR_WINDOWS)\application.yaml \
+		-env.vars.file $(CONFIG_DIR_WINDOWS)\sample.env
 
 proto.gen:
 	rm -rf genproto

@@ -17,7 +17,8 @@ var (
 
 type SecretKey string
 
-// Create returns JWT token signed with specified secret key and stores specified user id and expiration time in payload
+// Create returns JWT-token signed with specified secret key and
+// stores UserId, ExpireAt and IssuedAt in jwt payload
 func Create(userId domain.UserId, ttl time.Duration, secretKey SecretKey) (string, error) {
 	payload := auth.NewPayload(userId, ttl)
 
@@ -32,7 +33,7 @@ func Create(userId domain.UserId, ttl time.Duration, secretKey SecretKey) (strin
 	return token, err
 }
 
-// CreateWithExpirationTime is the same as Create, but additionally return token expiration
+// CreateWithExpirationTime is the same as Create, but additionally returns token expiration
 func CreateWithExpirationTime(userId domain.UserId, ttl time.Duration, secretKey SecretKey) (string, time.Time, error) {
 	payload := auth.NewPayload(userId, ttl)
 

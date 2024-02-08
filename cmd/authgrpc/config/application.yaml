@@ -3,9 +3,14 @@ app:
     server:
       host: localhost
       port: 44044
-      timeout: 5s
+    client:
+      notification-service:
+        host: localhost
+        port: 44045
 
-  access_token_ttl: 1h
+  auth-service:
+    token-ttl: 1h
+    token-secret-key: ""
 
   postgres:
     host: localhost

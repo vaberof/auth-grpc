@@ -20,8 +20,8 @@ func (password *Password) String() string {
 	return string(*password)
 }
 
-type AppId int32
+type Code string
 
-func (appId *AppId) String() string {
-	return string(*appId)
+func (code *Code) String() string {
+	return string(*code)
 }

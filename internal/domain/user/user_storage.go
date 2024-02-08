@@ -8,5 +8,5 @@ import (
 type UserStorage interface {
 	Create(ctx context.Context, email domain.Email, password domain.Password) (domain.UserId, error)
 	GetByEmail(ctx context.Context, email domain.Email) (*User, error)
-	ExistsByEmail(ctx context.Context, email domain.Email) bool
+	ExistsByEmail(ctx context.Context, email domain.Email) (bool, error)
 }

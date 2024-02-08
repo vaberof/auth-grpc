@@ -14,7 +14,7 @@ type JwtPayload struct {
 func NewPayload(userId domain.UserId, ttl time.Duration) *JwtPayload {
 	return &JwtPayload{
 		UserId:    userId,
-		IssuedAt:  time.Now(),
-		ExpiredAt: time.Now().Add(ttl),
+		IssuedAt:  time.Now().UTC(),
+		ExpiredAt: time.Now().UTC().Add(ttl),
 	}
 }

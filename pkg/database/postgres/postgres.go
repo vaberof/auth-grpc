@@ -3,6 +3,8 @@ package postgres
 import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
+
+	_ "github.com/lib/pq"
 )
 
 type Config struct {
@@ -14,19 +16,19 @@ type Config struct {
 }
 
 type ManagedDatabase struct {
-	Db *sqlx.DB
+	PostgresDb *sqlx.DB
 }
 
 func New(config *Config) (*ManagedDatabase, error) {
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", config.Host, config.Port, config.User, config.Password, config.Database)
+	psqlUrl := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", config.Host, config.Port, config.User, config.Password, config.Database)
 
-	db, err := sqlx.Connect("postgres", dsn)
+	psqlDb, err := sqlx.Connect("postgres", psqlUrl)
 	if err != nil {
 		return nil, err
 	}
 
 	managedDatabase := &ManagedDatabase{
-		Db: db,
+		PostgresDb: psqlDb,
 	}
 
 	return managedDatabase, nil

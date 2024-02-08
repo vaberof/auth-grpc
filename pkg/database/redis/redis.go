@@ -14,7 +14,7 @@ type Config struct {
 }
 
 type ManagedDatabase struct {
-	redisDb *redis.Client
+	RedisDb *redis.Client
 }
 
 func New(config *Config) (*ManagedDatabase, error) {
@@ -28,7 +28,7 @@ func New(config *Config) (*ManagedDatabase, error) {
 	redisDb := redis.NewClient(opts)
 
 	managedDatabase := &ManagedDatabase{
-		redisDb: redisDb,
+		RedisDb: redisDb,
 	}
 
 	return managedDatabase, nil
