@@ -6,7 +6,9 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/vaberof/auth-grpc/internal/app/entrypoint/grpc/auth"
 	authservice "github.com/vaberof/auth-grpc/internal/domain/auth"
+	userservice "github.com/vaberof/auth-grpc/internal/domain/user"
 	"github.com/vaberof/auth-grpc/internal/infra/integration/grpc/notificationservice"
+	redisstorage "github.com/vaberof/auth-grpc/internal/infra/storage/redis"
 	"github.com/vaberof/auth-grpc/pkg/database/postgres"
 	"github.com/vaberof/auth-grpc/pkg/database/redis"
 	"github.com/vaberof/auth-grpc/pkg/grpc/grpcclient"
@@ -31,8 +33,6 @@ func main() {
 	logger := logs.New(os.Stdout, nil)
 
 	appConfig := mustGetAppConfig(*appConfigPaths)
-	appConfig.Postgres.User = os.Getenv("POSTGRES_USER")
-	appConfig.Postgres.Password = os.Getenv("POSTGRES_PASSWORD")
 
 	fmt.Printf("%+v\n", appConfig)
 
@@ -41,7 +41,7 @@ func main() {
 		panic(err)
 	}
 
-	_, err = redis.New(&appConfig.Redis)
+	redisManagedDb, err := redis.New(&appConfig.Redis)
 	if err != nil {
 		panic(err)
 	}
@@ -51,9 +51,13 @@ func main() {
 		panic(err)
 	}
 
-	notificationService := notificationservice.New(notificationServiceGrpcClient, logger)
+	// TODO: init storages
+	redisStorage := redisstorage.NewRedisStorage(redisManagedDb.RedisDb)
 
-	authService := authservice.NewAuthService(&appConfig.AuthService, nil, notificationService, nil, logger)
+	notificationService := notificationservice.New(notificationServiceGrpcClient, logger)
+	userService := userservice.NewUserService(nil, logger)
+
+	authService := authservice.NewAuthService(&appConfig.AuthService, userService, notificationService, redisStorage, logger)
 
 	// TODO: implement general graceful shutdown for databases and server
 

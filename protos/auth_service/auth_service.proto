@@ -4,10 +4,12 @@ package genproto;
 
 option go_package = "genproto/auth_service";
 
+import "google/protobuf/empty.proto";
+
 service AuthService {
-  rpc Register (RegisterRequest) returns (RegisterResponse);
-  rpc Login (LoginRequest) returns (LoginResponse);
-  rpc Verify (VerifyRequest) returns (VerifyResponse);
+  rpc Register (RegisterRequest) returns (google.protobuf.Empty);
+  rpc Login (LoginRequest) returns (AuthResponse);
+  rpc Verify (VerifyRequest) returns (google.protobuf.Empty);
   rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
 }
 
@@ -16,13 +18,13 @@ message RegisterRequest {
   string password = 2;
 }
 
-message RegisterResponse {
-  string message = 1;
-}
-
 message LoginRequest {
   string email = 1;
   string password = 2;
+}
+
+message AuthResponse {
+  string access_token = 1;
 }
 
 message LoginResponse {

@@ -30,8 +30,6 @@ func (service *NotificationService) SendEmail(ctx context.Context, to string, em
 		slog.String("subject", subject),
 		slog.Any("body", body))
 
-	log.Info("sending email to", to)
-
 	_, err := service.grpcClient.NotificationService().SendEmail(ctx, &notification_service.SendEmailRequest{
 		To:      to,
 		Subject: subject,

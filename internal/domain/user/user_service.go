@@ -40,16 +40,20 @@ func (u *userServiceImpl) Create(ctx context.Context, email domain.Email, passwo
 
 	log.Info("creating a user")
 
-	uid, err := u.userStorage.Create(ctx, email, password)
-	if err != nil {
-		log.Error("failed to create a user", err)
+	return 1, nil
 
-		return 0, fmt.Errorf("%s: %w", operation, err)
-	}
+	// TODO: implement storage
 
-	log.Info("used created")
-
-	return uid, nil
+	//uid, err := u.userStorage.Create(ctx, email, password)
+	//if err != nil {
+	//	log.Error("failed to create a user", err)
+	//
+	//	return 0, fmt.Errorf("%s: %w", operation, err)
+	//}
+	//
+	//log.Info("used created")
+	//
+	//return uid, nil
 }
 
 func (u *userServiceImpl) GetByEmail(ctx context.Context, email domain.Email) (*User, error) {

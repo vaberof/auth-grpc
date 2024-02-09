@@ -8,6 +8,7 @@ import (
 	"github.com/vaberof/auth-grpc/pkg/database/redis"
 	"github.com/vaberof/auth-grpc/pkg/grpc/grpcclient"
 	"github.com/vaberof/auth-grpc/pkg/grpc/grpcserver"
+	"os"
 )
 
 type AppConfig struct {
@@ -56,6 +57,8 @@ func tryGetAppConfig(sources ...string) (*AppConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	postgresConfig.User = os.Getenv("POSTGRES_USER")
+	postgresConfig.Password = os.Getenv("POSTGRES_PASSWORD")
 
 	var redisConfig redis.Config
 	err = config.ParseConfig(provider, "app.redis", &redisConfig)

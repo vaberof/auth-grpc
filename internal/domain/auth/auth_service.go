@@ -21,6 +21,13 @@ const (
 	registerCodeKey = "register_code_"
 )
 
+const (
+	userDataExpireTime         = 5 * time.Minute
+	verificationCodeExpireTime = 2 * time.Second
+)
+
+const verificationCodeLength = 6
+
 var (
 	ErrUserAlreadyExists      = errors.New("user with specified email already exists")
 	ErrInvalidEmailOrPassword = errors.New("invalid email or password")
@@ -73,18 +80,20 @@ func (a *authServiceImpl) Register(ctx context.Context, email domain.Email, pass
 
 	log.Info("registering a user")
 
-	exists, err := a.userService.ExistsByEmail(ctx, email)
-	if err != nil {
-		log.Error("failed to get info about existing/non-existing email")
+	// TODO: implement storage
 
-		return fmt.Errorf("%s: %w", operation, err)
-	}
-
-	if exists {
-		log.Warn("user already exists with specified email")
-
-		return ErrUserAlreadyExists
-	}
+	//exists, err := a.userService.ExistsByEmail(ctx, email)
+	//if err != nil {
+	//	log.Error("failed to get info about existing/non-existing email")
+	//
+	//	return fmt.Errorf("%s: %w", operation, err)
+	//}
+	//
+	//if exists {
+	//	log.Warn("user already exists with specified email")
+	//
+	//	return fmt.Errorf("%s: %w", operation, ErrUserAlreadyExists)
+	//}
 
 	passwordHash, err := xpassword.Hash(password.String())
 	if err != nil {
@@ -105,7 +114,7 @@ func (a *authServiceImpl) Register(ctx context.Context, email domain.Email, pass
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 
-	err = a.inMemoryStorage.Set(ctx, userEmailKey+email.String(), string(userData), 10*time.Minute)
+	err = a.inMemoryStorage.Set(ctx, userEmailKey+email.String(), string(userData), userDataExpireTime)
 	if err != nil {
 		log.Error("failed to set a userData to cache", err)
 
@@ -146,7 +155,7 @@ func (a *authServiceImpl) Login(ctx context.Context, email domain.Email, passwor
 		return nil, fmt.Errorf("%s: %w", operation, err)
 	}
 
-	err = xpassword.Check(string(password), string(domainUser.Password))
+	err = xpassword.Check(password.String(), domainUser.Password.String())
 	if err != nil {
 		log.Error("incorrect password", err)
 
@@ -263,14 +272,14 @@ func (a *authServiceImpl) sendVerificationCode(ctx context.Context, key string, 
 		slog.String("key", key),
 		slog.String("email", email.String()))
 
-	code, err := xrand.GenerateRandomCode(6)
+	code, err := xrand.GenerateRandomCode(verificationCodeLength)
 	if err != nil {
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 
 	log.Info("random code generated")
 
-	err = a.inMemoryStorage.Set(ctx, key+email.String(), code, time.Minute)
+	err = a.inMemoryStorage.Set(ctx, key+email.String(), code, verificationCodeExpireTime)
 	if err != nil {
 		return fmt.Errorf("%s: %w", operation, err)
 	}
