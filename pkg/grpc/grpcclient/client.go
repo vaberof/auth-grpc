@@ -1,6 +1,7 @@
 package grpcclient
 
 import (
+	"context"
 	"fmt"
 	pb "github.com/vaberof/auth-grpc/genproto/notification_service"
 	"google.golang.org/grpc"
@@ -17,7 +18,8 @@ type grpcClientImpl struct {
 }
 
 func New(cfg *NotificationServiceClientConfig) (GrpcClient, error) {
-	connNotificationService, err := grpc.Dial(
+	connNotificationService, err := grpc.DialContext(
+		context.Background(),
 		fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)

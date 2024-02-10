@@ -8,6 +8,7 @@ import (
 	authservice "github.com/vaberof/auth-grpc/internal/domain/auth"
 	userservice "github.com/vaberof/auth-grpc/internal/domain/user"
 	"github.com/vaberof/auth-grpc/internal/infra/integration/grpc/notificationservice"
+	"github.com/vaberof/auth-grpc/internal/infra/storage/postgres/pguser"
 	redisstorage "github.com/vaberof/auth-grpc/internal/infra/storage/redis"
 	"github.com/vaberof/auth-grpc/pkg/database/postgres"
 	"github.com/vaberof/auth-grpc/pkg/database/redis"
@@ -36,7 +37,7 @@ func main() {
 
 	fmt.Printf("%+v\n", appConfig)
 
-	_, err := postgres.New(&appConfig.Postgres)
+	postgresManagedDb, err := postgres.New(&appConfig.Postgres)
 	if err != nil {
 		panic(err)
 	}
@@ -51,11 +52,11 @@ func main() {
 		panic(err)
 	}
 
-	// TODO: init storages
 	redisStorage := redisstorage.NewRedisStorage(redisManagedDb.RedisDb)
+	pgUserStorage := pguser.NewPgUserStorage(postgresManagedDb.PostgresDb)
 
 	notificationService := notificationservice.New(notificationServiceGrpcClient, logger)
-	userService := userservice.NewUserService(nil, logger)
+	userService := userservice.NewUserService(pgUserStorage, logger)
 
 	authService := authservice.NewAuthService(&appConfig.AuthService, userService, notificationService, redisStorage, logger)
 

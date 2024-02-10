@@ -1,12 +1,10 @@
 package auth
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/vaberof/auth-grpc/internal/domain/user"
-	"github.com/vaberof/auth-grpc/internal/infra/storage/redis"
 	"github.com/vaberof/auth-grpc/pkg/auth/accesstoken"
 	"github.com/vaberof/auth-grpc/pkg/domain"
 	"github.com/vaberof/auth-grpc/pkg/logging/logs"
@@ -22,8 +20,8 @@ const (
 )
 
 const (
-	userDataExpireTime         = 5 * time.Minute
-	verificationCodeExpireTime = 2 * time.Second
+	userDataCacheExpireTime         = 5 * time.Minute
+	verificationCodeCacheExpireTime = 2 * time.Minute
 )
 
 const verificationCodeLength = 6
@@ -40,10 +38,10 @@ var (
 )
 
 type AuthService interface {
-	Register(ctx context.Context, email domain.Email, password domain.Password) error
-	Login(ctx context.Context, email domain.Email, password domain.Password) (*AccessToken, error)
-	Verify(ctx context.Context, email domain.Email, code domain.Code) error
-	VerifyToken(ctx context.Context, token AccessToken) error
+	Register(email domain.Email, password domain.Password) error
+	Login(email domain.Email, password domain.Password) (*AccessToken, error)
+	Verify(email domain.Email, code domain.Code) error
+	VerifyToken(token AccessToken) error
 }
 
 type Config struct {
@@ -71,7 +69,7 @@ func NewAuthService(config *Config, userService UserService, notificationService
 	}
 }
 
-func (a *authServiceImpl) Register(ctx context.Context, email domain.Email, password domain.Password) error {
+func (a *authServiceImpl) Register(email domain.Email, password domain.Password) error {
 	const operation = "Register"
 
 	log := a.logger.With(
@@ -80,24 +78,22 @@ func (a *authServiceImpl) Register(ctx context.Context, email domain.Email, pass
 
 	log.Info("registering a user")
 
-	// TODO: implement storage
+	exists, err := a.userService.ExistsByEmail(email)
+	if err != nil {
+		log.Error("failed to get info about existing/non-existing email")
 
-	//exists, err := a.userService.ExistsByEmail(ctx, email)
-	//if err != nil {
-	//	log.Error("failed to get info about existing/non-existing email")
-	//
-	//	return fmt.Errorf("%s: %w", operation, err)
-	//}
-	//
-	//if exists {
-	//	log.Warn("user already exists with specified email")
-	//
-	//	return fmt.Errorf("%s: %w", operation, ErrUserAlreadyExists)
-	//}
+		return fmt.Errorf("%s: %w", operation, err)
+	}
+
+	if exists {
+		log.Warn("user already exists with specified email")
+
+		return fmt.Errorf("%s: %w", operation, ErrUserAlreadyExists)
+	}
 
 	passwordHash, err := xpassword.Hash(password.String())
 	if err != nil {
-		log.Error("failed to hash password", err)
+		log.Error("failed to hash password", "error", err)
 
 		return fmt.Errorf("%s: %w", operation, err)
 	}
@@ -109,14 +105,14 @@ func (a *authServiceImpl) Register(ctx context.Context, email domain.Email, pass
 
 	userData, err := json.Marshal(domainUser)
 	if err != nil {
-		log.Error("failed to marshal a user", err)
+		log.Error("failed to marshal a user", "error", err)
 
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 
-	err = a.inMemoryStorage.Set(ctx, userEmailKey+email.String(), string(userData), userDataExpireTime)
+	err = a.inMemoryStorage.Set(userEmailKey+email.String(), string(userData), userDataCacheExpireTime)
 	if err != nil {
-		log.Error("failed to set a userData to cache", err)
+		log.Error("failed to set a userData to cache", "error", err)
 
 		return fmt.Errorf("%s: %w", operation, err)
 	}
@@ -124,16 +120,16 @@ func (a *authServiceImpl) Register(ctx context.Context, email domain.Email, pass
 	go func() {
 		log.Info("send verification code to email")
 
-		err := a.sendVerificationCode(ctx, registerCodeKey, email)
+		err := a.sendVerificationCode(registerCodeKey, email)
 		if err != nil {
-			log.Error("failed to send verification code", err)
+			log.Error("failed to send verification code", "error", err)
 		}
 	}()
 
 	return nil
 }
 
-func (a *authServiceImpl) Login(ctx context.Context, email domain.Email, password domain.Password) (*AccessToken, error) {
+func (a *authServiceImpl) Login(email domain.Email, password domain.Password) (*AccessToken, error) {
 	const operation = "Login"
 
 	log := a.logger.With(
@@ -142,15 +138,15 @@ func (a *authServiceImpl) Login(ctx context.Context, email domain.Email, passwor
 
 	log.Info("logging a user")
 
-	domainUser, err := a.userService.GetByEmail(ctx, email)
+	domainUser, err := a.userService.GetByEmail(email)
 	if err != nil {
 		if errors.Is(err, user.ErrUserNotFound) {
-			log.Error("user not found", err)
+			log.Error("user not found", "error", err)
 
 			return nil, fmt.Errorf("%s: %w", operation, ErrInvalidEmailOrPassword)
 		}
 
-		log.Error("failed to get user by email", err)
+		log.Error("failed to get user by email", "error", err)
 
 		return nil, fmt.Errorf("%s: %w", operation, err)
 	}
@@ -162,28 +158,21 @@ func (a *authServiceImpl) Login(ctx context.Context, email domain.Email, passwor
 		return nil, fmt.Errorf("%s: %w", operation, ErrInvalidEmailOrPassword)
 	}
 
-	token, expiredAt, err := accesstoken.CreateWithExpirationTime(domainUser.Id, a.config.TokenTtl, accesstoken.SecretKey(a.config.TokenSecretKey))
+	token, err := accesstoken.Create(domainUser.Id, a.config.TokenTtl, accesstoken.SecretKey(a.config.TokenSecretKey))
 	if err != nil {
-		log.Error("failed to create an access token", err)
+		log.Error("failed to create an access token", "error", err)
 
 		return nil, fmt.Errorf("%s: %w", operation, err)
 	}
 
 	accessToken := AccessToken(token)
 
-	err = a.inMemoryStorage.Set(ctx, token, domainUser.Id.String(), expiredAt.Sub(time.Now().UTC()))
-	if err != nil {
-		log.Error("failed to cache token", err)
-
-		return nil, fmt.Errorf("%s: %w", operation, err)
-	}
-
 	log.Info("user logged in")
 
 	return &accessToken, nil
 }
 
-func (a *authServiceImpl) Verify(ctx context.Context, email domain.Email, code domain.Code) error {
+func (a *authServiceImpl) Verify(email domain.Email, code domain.Code) error {
 	const operation = "Verify"
 
 	log := a.logger.With(
@@ -193,9 +182,9 @@ func (a *authServiceImpl) Verify(ctx context.Context, email domain.Email, code d
 
 	log.Info("verifying an email")
 
-	userData, err := a.inMemoryStorage.Get(ctx, userEmailKey+email.String())
+	userData, err := a.inMemoryStorage.Get(userEmailKey + email.String())
 	if err != nil {
-		log.Error("failed to get user data from cache", err)
+		log.Error("failed to get user data from cache", "error", err)
 
 		return fmt.Errorf("%s: %w", operation, err)
 	}
@@ -203,27 +192,27 @@ func (a *authServiceImpl) Verify(ctx context.Context, email domain.Email, code d
 	var domainUser user.User
 	err = json.Unmarshal([]byte(userData), &domainUser)
 	if err != nil {
-		log.Error("failed to unmarshal user", err)
+		log.Error("failed to unmarshal user", "error", err)
 
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 
-	cachedCode, err := a.inMemoryStorage.Get(ctx, registerCodeKey+domainUser.Email.String())
+	cachedCode, err := a.inMemoryStorage.Get(registerCodeKey + domainUser.Email.String())
 	if err != nil {
-		log.Error("failed to get verification code from cache", err)
+		log.Error("failed to get verification code from cache", "error", err)
 
 		return fmt.Errorf("%s: %w", operation, ErrVerificationCodeExpired)
 	}
 
 	if code.String() != cachedCode {
-		log.Error("incorrect validation code", ErrInvalidVerificationCode)
+		log.Error("incorrect validation code", "error", ErrInvalidVerificationCode)
 
 		return fmt.Errorf("%s: %w", operation, ErrInvalidVerificationCode)
 	}
 
-	_, err = a.userService.Create(ctx, domainUser.Email, domainUser.Password)
+	_, err = a.userService.Create(domainUser.Email, domainUser.Password)
 	if err != nil {
-		log.Error("failed to create user", err)
+		log.Error("failed to create user", "error", err)
 
 		return fmt.Errorf("%s: %w", operation, err)
 	}
@@ -233,7 +222,7 @@ func (a *authServiceImpl) Verify(ctx context.Context, email domain.Email, code d
 	return nil
 }
 
-func (a *authServiceImpl) VerifyToken(ctx context.Context, token AccessToken) error {
+func (a *authServiceImpl) VerifyToken(token AccessToken) error {
 	const operation = "VerifyToken"
 
 	log := a.logger.With(
@@ -242,29 +231,35 @@ func (a *authServiceImpl) VerifyToken(ctx context.Context, token AccessToken) er
 
 	log.Info("verifying a token")
 
-	_, err := a.inMemoryStorage.Get(ctx, string(token))
+	_, err := accesstoken.Verify(string(token), accesstoken.SecretKey(a.config.TokenSecretKey))
 	if err != nil {
-		if errors.Is(err, redis.ErrKeyNotFound) {
-			log.Error("specified token not found", err)
+		if errors.Is(err, accesstoken.ErrInvalidToken) {
+			log.Error("invalid access token", "error", err)
+
+			return fmt.Errorf("%s: %w", operation, ErrInvalidToken)
+		}
+		if errors.Is(err, accesstoken.ErrExpiredToken) {
+			log.Error("access token has expired", "error", err)
+
+			return fmt.Errorf("%s: %w", operation, ErrTokenExpired)
+		}
+		if errors.Is(err, accesstoken.ErrInvalidSigningMethod) {
+			log.Error("access token has invalid signing method", "error", err)
 
 			return fmt.Errorf("%s: %w", operation, ErrInvalidToken)
 		}
 
-		if errors.Is(err, redis.ErrKeyExpired) {
-			log.Error("specified token has expired", err)
-
-			return fmt.Errorf("%s: %w", operation, ErrTokenExpired)
-		}
-
-		log.Error("unexpected error from memory storage", err)
+		log.Error("unexpected error from 'accesstoken' package", "error", err)
 
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 
+	log.Info("successfully verified a token")
+
 	return nil
 }
 
-func (a *authServiceImpl) sendVerificationCode(ctx context.Context, key string, email domain.Email) error {
+func (a *authServiceImpl) sendVerificationCode(key string, email domain.Email) error {
 	const operation = "sendVerificationCode"
 
 	log := a.logger.With(
@@ -274,21 +269,25 @@ func (a *authServiceImpl) sendVerificationCode(ctx context.Context, key string, 
 
 	code, err := xrand.GenerateRandomCode(verificationCodeLength)
 	if err != nil {
+		log.Error("failed to generate random code", "error", err)
+
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 
 	log.Info("random code generated")
 
-	err = a.inMemoryStorage.Set(ctx, key+email.String(), code, verificationCodeExpireTime)
+	err = a.inMemoryStorage.Set(key+email.String(), code, verificationCodeCacheExpireTime)
 	if err != nil {
+		log.Error("failed to cache verification code", "error", err)
+
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 
-	log.Info("code saved in memory storage")
+	log.Info("code saved in memory storage", "code", code)
 
-	err = a.notificationService.SendEmail(ctx, email.String(), "verification_email", "Verification email", map[string]string{"code": code})
+	err = a.notificationService.SendEmail(email.String(), "verification_email", "Verification email", map[string]string{"code": code})
 	if err != nil {
-		log.Error("failed to send verification code", err)
+		log.Error("failed to send verification code", "error", err)
 
 		return fmt.Errorf("%s: %w", operation, err)
 	}

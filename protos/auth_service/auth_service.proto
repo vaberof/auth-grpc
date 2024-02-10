@@ -10,7 +10,7 @@ service AuthService {
   rpc Register (RegisterRequest) returns (google.protobuf.Empty);
   rpc Login (LoginRequest) returns (AuthResponse);
   rpc Verify (VerifyRequest) returns (google.protobuf.Empty);
-  rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
+  rpc VerifyToken(VerifyTokenRequest) returns (google.protobuf.Empty);
 }
 
 message RegisterRequest {
@@ -34,10 +34,6 @@ message LoginResponse {
 message VerifyRequest {
   string email = 1;
   string code = 2;
-}
-
-message VerifyResponse {
-  string message = 1;
 }
 
 message VerifyTokenRequest {

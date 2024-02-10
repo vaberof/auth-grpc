@@ -20,7 +20,7 @@ func New(grpcClient grpcclient.GrpcClient, logs *logs.Logs) *NotificationService
 	return &NotificationService{grpcClient: grpcClient, logger: logger}
 }
 
-func (service *NotificationService) SendEmail(ctx context.Context, to string, emailType string, subject string, body map[string]string) error {
+func (service *NotificationService) SendEmail(to string, emailType string, subject string, body map[string]string) error {
 	const operation = "SendEmail"
 
 	log := service.logger.With(
@@ -30,14 +30,14 @@ func (service *NotificationService) SendEmail(ctx context.Context, to string, em
 		slog.String("subject", subject),
 		slog.Any("body", body))
 
-	_, err := service.grpcClient.NotificationService().SendEmail(ctx, &notification_service.SendEmailRequest{
+	_, err := service.grpcClient.NotificationService().SendEmail(context.Background(), &notification_service.SendEmailRequest{
 		To:      to,
 		Subject: subject,
 		Body:    body,
 		Type:    emailType,
 	})
 	if err != nil {
-		log.Error("failed to send email", err)
+		log.Error("failed to send email", "error", err)
 
 		return fmt.Errorf("%s: %w", operation, err)
 	}

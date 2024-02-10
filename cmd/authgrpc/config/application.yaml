@@ -15,7 +15,7 @@ app:
   postgres:
     host: localhost
     port: 5432
-    database: auth_grpc
+    database: auth_service
 
   redis:
     host: localhost
