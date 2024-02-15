@@ -60,8 +60,6 @@ func main() {
 
 	authService := authservice.NewAuthService(&appConfig.AuthService, userService, notificationService, redisStorage, logger)
 
-	// TODO: implement general graceful shutdown for databases and server
-
 	grpcServer := grpcserver.New(&appConfig.Server, logger)
 
 	auth.Register(grpcServer.Server, authService)

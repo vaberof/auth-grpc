@@ -39,8 +39,6 @@ func (u *userServiceImpl) Create(email domain.Email, password domain.Password) (
 
 	log.Info("creating a user")
 
-	// TODO: implement storage
-
 	uid, err := u.userStorage.Create(email, password)
 	if err != nil {
 		log.Error("failed to create a user", "error", err)
@@ -48,7 +46,7 @@ func (u *userServiceImpl) Create(email domain.Email, password domain.Password) (
 		return 0, fmt.Errorf("%s: %w", operation, err)
 	}
 
-	log.Info("used created")
+	log.Info("user created")
 
 	return uid, nil
 }

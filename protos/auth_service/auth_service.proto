@@ -27,10 +27,6 @@ message AuthResponse {
   string access_token = 1;
 }
 
-message LoginResponse {
-  string token = 1;
-}
-
 message VerifyRequest {
   string email = 1;
   string code = 2;
@@ -38,8 +34,4 @@ message VerifyRequest {
 
 message VerifyTokenRequest {
   string token = 1;
-}
-
-message VerifyTokenResponse {
-  string message = 1;
 }

@@ -1,0 +1,23 @@
+app:
+  grpc:
+    server:
+      host: 0.0.0.0
+      port: 44044
+    client:
+      notification-service:
+        host: host.docker.internal
+        port: 44045
+
+  auth-service:
+    token-ttl: 1h
+    token-secret-key: ""
+
+  postgres:
+    host: postgres-database
+    port: 5432
+    database: auth_service
+
+  redis:
+    host: redis-database
+    port: 6379
+    database: 0
