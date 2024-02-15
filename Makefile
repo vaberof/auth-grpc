@@ -11,7 +11,7 @@ CONFIG_DIR_WINDOWS=.\cmd\authgrpc\config
 
 CURRENT_DIR=$(shell pwd)
 
-POSTGRES_HOST=postgres-database
+POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=admin
